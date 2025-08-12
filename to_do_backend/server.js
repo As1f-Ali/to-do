@@ -18,7 +18,7 @@ app.get('/test',(req,res)=>{
 var todo = [];
 
 app.post('/create',async (req,res)=>{
-    const { title, description } = req.body;
+    const { title, description, status = 'pending' } = req.body;
     if (!title || !description) {
         return res.status(400).json({ error: 'Title and description are required' });
     }
@@ -26,7 +26,8 @@ app.post('/create',async (req,res)=>{
     const newTodo = await prisma.todo.create({
         data: {
             title,
-            description
+            description,
+            status
         }
     })
 
@@ -57,30 +58,24 @@ app.get('/todos/:id',async (req,res)=>{
     res.json(foundTodo);
 });
 
-app.put('/todos/:id',async (req,res)=>{
+app.put('/todos/:id', async (req, res) => {
     const todoId = parseInt(req.params.id, 10);
-    const foundTodo =await prisma.todo.findUnique({
-        where: { id: todoId }
-});
-    if (!foundTodo) {
+    const { title, description, status } = req.body;
+
+    const existingTodo = await prisma.todo.findUnique({ where: { id: todoId } });
+
+    if (!existingTodo) {
         return res.status(404).json({ error: 'Todo not found' });
     }
-    
-    const { title, description } = req.body;
-    if (!title || !description) {
-        return res.status(400).json({ error: 'Title and description are required' });
-    }
-    
-    foundTodo.title = title;
-    foundTodo.description = description;
-    
+
     const updatedTodo = await prisma.todo.update({
         where: { id: todoId },
-        data: foundTodo 
+        data: { title, description, status }
     });
 
-    res.json(foundTodo);
-})
+    res.json(updatedTodo);
+});
+
 
 
 app.delete('/todos/:id',async (req,res)=>{
